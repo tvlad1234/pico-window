@@ -7,7 +7,7 @@ add_library(freertos
     ${PICO_SDK_FREERTOS_SOURCE}/stream_buffer.c
     ${PICO_SDK_FREERTOS_SOURCE}/tasks.c
     ${PICO_SDK_FREERTOS_SOURCE}/timers.c
-    ${PICO_SDK_FREERTOS_SOURCE}/portable/MemMang/heap_3.c
+    ${PICO_SDK_FREERTOS_SOURCE}/portable/MemMang/heap_4.c
     port.c
 
 )
