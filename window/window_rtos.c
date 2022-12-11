@@ -2,6 +2,7 @@
 #include "pico/stdlib.h"
 #include "window_rtos.h"
 #include "window.h"
+#include "gfx.h"
 #include "ps2.h"
 
 #include "freertos.h"
@@ -13,6 +14,8 @@ uint kbKeys = 0;
 
 TaskHandle_t keyScanHandle;
 SemaphoreHandle_t keySemaphore;
+
+TaskHandle_t infoBarHandle;
 
 TaskHandle_t windowTaskList[MAX_WINDOWS];
 uint numCreatedTasks = 0;
@@ -33,6 +36,7 @@ void Window_taskYield()
     taskYIELD();
 }
 
+// Key scanning task
 void keyScan(void *p)
 {
     char c;
@@ -54,6 +58,22 @@ void keyScan(void *p)
             break;
         }
         giveKeySemaphore();
+    }
+}
+
+// Info bar task
+void infoBar(void *p)
+{
+    GFX_fillRect(0, 0, 640, 11, WHITE);
+    while (true)
+    {
+        GFX_fillRect(0, 0, 160, 11, WHITE);
+        GFX_setCursor(3, 2);
+        GFX_setTextColor(BLACK);
+
+        GFX_printf("Free memory: %.2f kB", xPortGetFreeHeapSize()/1000.0f);
+
+        Window_delay(1000);
     }
 }
 
@@ -83,7 +103,12 @@ void Window_startRTOS()
 {
     keySemaphore = xSemaphoreCreateBinary();
     xSemaphoreGive(keySemaphore);
+
+    // Key scanning task
     xTaskCreate(keyScan, "KeyScan", 128, NULL, 1, &keyScanHandle);
+
+    // Info bar task
+    xTaskCreate(infoBar, "InfoBar", 256, NULL, 1, &infoBarHandle);
 
     // Start FreeRTOS kernel
     vTaskStartScheduler();

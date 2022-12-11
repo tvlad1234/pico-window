@@ -7,7 +7,7 @@
 #define VGA_BGR 1
 #define MAX_WINDOWS 10
 
-#define WINDOW_VER "1.00"
+#define WINDOW_VER "1.00-dev"
 
 #if VGA_BGR
 #define BLACK 0b0
