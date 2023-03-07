@@ -4,7 +4,7 @@
 #include "pico/stdlib.h"
 #include "FreeRTOS.h"
 
-#define VGA_BGR 1
+#define VGA_BGR 0
 #define MAX_WINDOWS 10
 
 #define WINDOW_VER "1.00-dev"
@@ -41,6 +41,8 @@
 #define PS2_DOWNARROW 10
 #define PS2_RIGHTARROW 21
 
+#define KEY_BUF_LEN 25
+
 typedef struct TermWindow
 {
     uint xPos, yPos;
@@ -53,16 +55,23 @@ typedef struct TermWindow
     uint textCol;
     uint borderCol;
 
-    char termScanBuf[50];
+    uint numKeys;
+    char keyBuf[KEY_BUF_LEN];
+
     char termPrintBuf[50];
+
+    bool enableEcho;
+
+    void *miscParam;
 
 } TermWindow;
 
 extern TermWindow *activeWindow;
 
+
 void Window_initIO(uint d, uint c, uint vsync_pin, uint hsync_pin, uint r_pin);
 
-void Window_createTaskWithWindow(TaskFunction_t taskFunc, uint xPos, uint yPos, uint xSize, uint ySize, char name[], uint8_t borderCol);
+void Window_createTaskWithWindow(TaskFunction_t taskFunc, uint xPos, uint yPos, uint xSize, uint ySize, char name[], uint8_t borderCol, void *windowParam);
 void Window_startRTOS();
 
 void Window_initWindow(TermWindow *w, uint xPos, uint yPos, uint xSize, uint ySize, char name[], uint8_t borderCol);
@@ -83,9 +92,10 @@ void Window_write(TermWindow *w, unsigned char c);
 void Window_printString(TermWindow *w, char s[]);
 void Window_printf(TermWindow *w, const char *format, ...);
 
+uint8_t Window_pressedKey(TermWindow *w);
 char Window_getchar(TermWindow *w);
 void Window_readString(TermWindow *w, char termScanBuf[]);
-void Window_scanf(TermWindow *w, const char *format, ...);
+int Window_scanf(TermWindow *w, const char *format, ...);
 
 void Window_taskYield();
 void Window_delay(uint ms);

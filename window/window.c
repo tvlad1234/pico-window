@@ -23,9 +23,9 @@ uint activeNr;
 void Window_setActiveWindow(TermWindow *w)
 {
     if (activeWindow != NULL)
-        GFX_fillCircle(activeWindow->xPos + activeWindow->xRes - 10, activeWindow->yPos - 7, 3, WHITE);
+        GFX_fillCircle(activeWindow->xPos + activeWindow->xRes - 10, activeWindow->yPos + 4, 3, WHITE);
     activeWindow = w;
-    GFX_fillCircle(activeWindow->xPos + activeWindow->xRes - 10, activeWindow->yPos - 7, 3, GREEN);
+    GFX_fillCircle(activeWindow->xPos + activeWindow->xRes - 10, activeWindow->yPos + 4, 3, GREEN);
 }
 
 /// @brief Initializes an already existing window
@@ -44,17 +44,17 @@ void Window_initWindow(TermWindow *w, uint xPos, uint yPos, uint xSize, uint ySi
     if (xSize % 2)
         xSize++;
 
-    w->xPos = xPos + 2;
-    w->yPos = yPos + 2;
+    w->xPos = xPos;
+    w->yPos = yPos;
     w->xRes = xSize;
     w->yRes = ySize;
     Window_setTextSize(w, 1);
 
     w->borderCol = borderCol;
-    GFX_drawRect(xPos, yPos, xSize + 4, ySize + 4, borderCol);
-    GFX_fillRect(w->xPos - 2, yPos - 10, xSize + 4, 10, WHITE);
+    GFX_drawRect(xPos, yPos, xSize, ySize, borderCol);
+    GFX_fillRect(w->xPos, yPos, xSize, 10, WHITE);
 
-    GFX_setCursor(xPos + 1, yPos - 9);
+    GFX_setCursor(xPos + 1, yPos+1);
     GFX_setTextColor(BLACK);
     GFX_printf(name);
 
@@ -63,6 +63,10 @@ void Window_initWindow(TermWindow *w, uint xPos, uint yPos, uint xSize, uint ySi
 
     activeNr = nrWindows;
     windowCarousel[nrWindows++] = w;
+
+    w->numKeys = 0;
+    w->enableEcho = false;
+
     Window_setActiveWindow(w);
 }
 
@@ -88,7 +92,7 @@ void Window_nextWindow()
         activeNr++;
     else
         activeNr = 0;
-    kbKeys = 0; // clear keypress buffer when switching focus
+   // kbKeys = 0; // clear keypress buffer when switching focus
     Window_setActiveWindow(windowCarousel[activeNr]);
 }
 

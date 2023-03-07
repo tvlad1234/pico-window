@@ -6,18 +6,23 @@
 #include "window.h"
 #include "window_rtos.h"
 
+uint8_t Window_pressedKey(TermWindow *w)
+{
+    return w->numKeys;
+}
+
 /// @brief Gets a single character from specified window input, blocks if there are no characters to be read or if the window is not active
 /// @param w Window from which to get input
 /// @return Read character
 char Window_getchar(TermWindow *w)
 {
-    while (w != activeWindow || !kbKeys)
+    while (!(w == activeWindow && w->numKeys))
         Window_taskYield();
 
     takeKeySemaphore();
-    char c = kbBuf[0];
-    kbKeys--;
-    memcpy(kbBuf, kbBuf + 1, kbKeys);
+    char c = w->keyBuf[0];
+    w->numKeys--;
+    memcpy(w->keyBuf, w->keyBuf + 1, w->numKeys);
     giveKeySemaphore();
 
     return c;
@@ -31,7 +36,7 @@ void Window_readString(TermWindow *w, char termScanBuf[])
     termScanBuf[0] = '\0';
     char c = Window_getchar(w);
     int i = 0;
-    while (c != PS2_ENTER)
+    while (c != '\n')
     {
         if (c == PS2_BACKSPACE)
         {
@@ -56,26 +61,25 @@ void Window_readString(TermWindow *w, char termScanBuf[])
 /// @param w Window from which to get input
 /// @param format Format string
 /// @param
-void Window_scanf(TermWindow *w, const char *format, ...)
+int Window_scanf(TermWindow *w, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
 
-    int i = 0;
-    int fcount = 0;
-    while (format[i])
-        if (format[i++] == '%')
-            fcount++;
+     w->enableEcho = true;
 
-    Window_readString(w, w->termScanBuf);
+    while(w->numKeys == 0)
+        Window_taskYield();
+    
+    while(w->keyBuf[w->numKeys-1] != '\n')
+        Window_taskYield();
 
-    while (vsscanf(w->termScanBuf, format, args) != fcount)
-    {
-        uint16_t col = w->textCol;
-        Window_setTextColour(w, RED);
-        Window_printf(w, "Invalid input!\n");
-        Window_setTextColour(w, col);
-        Window_readString(w, w->termScanBuf);
-    }
+    w->enableEcho = false;
+
+    w->keyBuf[w->numKeys-1] = '\0';
+    int r = vsscanf(w->keyBuf, format, args);
+    w->numKeys = 0;
+    
     va_end(args);
+    return r;
 }

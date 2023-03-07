@@ -14,8 +14,8 @@
 void Window_setTextSize(TermWindow *w, uint s)
 {
     w->textSize = s;
-    w->term_rows = w->yRes / (8 * w->textSize) - 1;
-    w->term_cols = w->xRes / (6 * w->textSize);
+    w->term_rows = (w->yRes - 7) / (8 * w->textSize) - 1;
+    w->term_cols = w->xRes / (6 * w->textSize) - 1;
     GFX_setTextSize(s);
 }
 
@@ -27,15 +27,15 @@ void Window_setCursor(TermWindow *w, int col, int row)
 {
     w->currentCol = col;
     w->currentRow = row;
-    GFX_setCursor(w->xPos + 6 * w->textSize * col, w->yPos + 8 * w->textSize * row + 1);
+    GFX_setCursor(w->xPos + 6 * w->textSize * col + 2, w->yPos + 8 * w->textSize * row + 11);
 }
 
 void Window_CopyPixelLine(TermWindow *w, uint dst, uint src)
 {
     extern unsigned char vga_data_array[TXCOUNT];
 
-    uint8_t *realSrc = vga_data_array + (320 * (src + w->yPos)) + (w->xPos / 2);
-    uint8_t *realDst = vga_data_array + (320 * (dst + w->yPos)) + (w->xPos / 2);
+    uint8_t *realSrc = vga_data_array + (320 * (src + w->yPos + 10)) + (w->xPos / 2);
+    uint8_t *realDst = vga_data_array + (320 * (dst + w->yPos + 10)) + (w->xPos / 2);
     uint transferSize = w->xRes / 2;
     dma_memcpy(realDst, realSrc, transferSize);
 }
@@ -44,8 +44,8 @@ void Window_DrawLineColor(TermWindow *w, uint line, uint8_t color)
 {
     extern unsigned char vga_data_array[TXCOUNT];
 
-    uint8_t *realDst = vga_data_array + (320 * (line + w->yPos)) + (w->xPos / 2);
-    uint transferSize = w->xRes / 2;
+    uint8_t *realDst = vga_data_array + (320 * (line + 10 + w->yPos)) + (w->xPos / 2)+1;
+    uint transferSize = w->xRes / 2 - 2;
     dma_memset(realDst, color, transferSize);
 }
 
@@ -54,9 +54,9 @@ void Window_DrawLineColor(TermWindow *w, uint line, uint8_t color)
 /// @param linesNum How many text lines to scroll
 void Window_scrollLines(TermWindow *w, int linesNum)
 {
-    uint startingLine = 8 * w->textSize * linesNum;   // How many pixel lines we wanna shift up
+    uint startingLine = (8 * w->textSize * linesNum);   // How many pixel lines we wanna shift up
     uint totalLines = w->term_rows * 8 * w->textSize; // w->yRes;
-    uint endingLine = totalLines - startingLine;
+    uint endingLine = totalLines - startingLine + 2;
 
     for (int i = 0; i < endingLine; i++)
         Window_CopyPixelLine(w, i, startingLine + i);
@@ -69,7 +69,7 @@ void Window_scrollLines(TermWindow *w, int linesNum)
 /// @param w Window to clear
 void Window_clear(TermWindow *w)
 {
-    for (int i = 0; i < w->yRes; i++)
+    for (int i = 10; i < w->yRes-11; i++)
         Window_DrawLineColor(w, i, BLACK);
 
     w->currentCol = 0;
@@ -86,10 +86,9 @@ void Window_write(TermWindow *w, unsigned char c)
     GFX_setTextColor(w->textCol);
     Window_setCursor(w, w->currentCol, w->currentRow);
     if (c == '\n' || c == '\r')
-    {
-        w->currentRow++;
         w->currentCol = 0;
-    }
+    if(c == '\n')
+        w->currentRow++;
     else if (c == '\b' || c == PS2_BACKSPACE)
     {
         if ((w->currentRow == 0 && w->currentCol) || (w->currentRow))

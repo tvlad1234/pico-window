@@ -9,9 +9,6 @@
 #include "task.h"
 #include "semphr.h"
 
-char kbBuf[50];
-uint kbKeys = 0;
-
 TaskHandle_t keyScanHandle;
 SemaphoreHandle_t keySemaphore;
 
@@ -43,8 +40,8 @@ void keyScan(void *p)
 
     while (true)
     {
-        while (!PS2_keyAvailable())
-            Window_taskYield();
+        while (!PS2_keyAvailable() || activeWindow->numKeys == KEY_BUF_LEN)
+            Window_delay(10);
         takeKeySemaphore();
         c = PS2_readKey();
         switch (c)
@@ -54,7 +51,14 @@ void keyScan(void *p)
             break;
 
         default:
-            kbBuf[kbKeys++] = c;
+            if (c == '\r')
+                c = '\n';
+            activeWindow->keyBuf[activeWindow->numKeys++] = c;
+            activeWindow->keyBuf[activeWindow->numKeys] = '\0';
+
+            if(activeWindow->enableEcho)
+                Window_write(activeWindow, c);
+
             break;
         }
         giveKeySemaphore();
@@ -64,6 +68,7 @@ void keyScan(void *p)
 // Info bar task
 void infoBar(void *p)
 {
+    GFX_setTextSize(1);
     GFX_fillRect(0, 0, 640, 11, WHITE);
     while (true)
     {
@@ -71,7 +76,7 @@ void infoBar(void *p)
         GFX_setCursor(3, 2);
         GFX_setTextColor(BLACK);
 
-        GFX_printf("Free memory: %.2f kB", xPortGetFreeHeapSize()/1000.0f);
+        GFX_printf("Free memory: %.2f kB", xPortGetFreeHeapSize() / 1000.0f);
 
         Window_delay(1000);
     }
@@ -85,10 +90,11 @@ void infoBar(void *p)
 /// @param ySize Vertical size of the window
 /// @param name Name of the task and window
 /// @param borderCol Border colour of the window
-void Window_createTaskWithWindow(TaskFunction_t taskFunc, uint xPos, uint yPos, uint xSize, uint ySize, char name[], uint8_t borderCol)
+void Window_createTaskWithWindow(TaskFunction_t taskFunc, uint xPos, uint yPos, uint xSize, uint ySize, char name[], uint8_t borderCol, void *windowParam)
 {
     TermWindow *w = Window_createWindow(xPos, yPos, xSize, ySize, name, borderCol);
-    xTaskCreate(taskFunc, name, 2048, w, 1, &windowTaskList[numCreatedTasks++]);
+    w->miscParam = windowParam;
+    xTaskCreate(taskFunc, name, 512, w, 1, &windowTaskList[numCreatedTasks++]);
 }
 
 /// @brief Blocks calling task for some amount of milliseconds
@@ -105,10 +111,10 @@ void Window_startRTOS()
     xSemaphoreGive(keySemaphore);
 
     // Key scanning task
-    xTaskCreate(keyScan, "KeyScan", 128, NULL, 1, &keyScanHandle);
+    xTaskCreate(keyScan, "KeyScan", 128, NULL, 2, &keyScanHandle);
 
     // Info bar task
-    xTaskCreate(infoBar, "InfoBar", 256, NULL, 1, &infoBarHandle);
+    xTaskCreate(infoBar, "InfoBar", 256, NULL, 2, &infoBarHandle);
 
     // Start FreeRTOS kernel
     vTaskStartScheduler();
