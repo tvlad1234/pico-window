@@ -90,6 +90,7 @@ void infoBar(void *p)
 /// @param ySize Vertical size of the window
 /// @param name Name of the task and window
 /// @param borderCol Border colour of the window
+/// @param windowParam Pointer to a user specified parameter, used for passing data to the task
 void Window_createTaskWithWindow(TaskFunction_t taskFunc, uint xPos, uint yPos, uint xSize, uint ySize, char name[], uint8_t borderCol, void *windowParam)
 {
     TermWindow *w = Window_createWindow(xPos, yPos, xSize, ySize, name, borderCol);

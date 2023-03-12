@@ -61,8 +61,8 @@ typedef struct TermWindow
     char termPrintBuf[50];
 
     bool enableEcho;
-
     void *miscParam;
+    int userIndex;
 
 } TermWindow;
 
@@ -74,6 +74,9 @@ void Window_initIO(uint d, uint c, uint vsync_pin, uint hsync_pin, uint r_pin);
 void Window_createTaskWithWindow(TaskFunction_t taskFunc, uint xPos, uint yPos, uint xSize, uint ySize, char name[], uint8_t borderCol, void *windowParam);
 void Window_startRTOS();
 
+void Window_setUserIndex(TermWindow *w, int x);
+
+void Window_destroy(TermWindow *w);
 void Window_initWindow(TermWindow *w, uint xPos, uint yPos, uint xSize, uint ySize, char name[], uint8_t borderCol);
 TermWindow *Window_createWindow(uint xPos, uint yPos, uint xSize, uint ySize, char name[], uint8_t borderCol);
 void Window_setActiveWindow(TermWindow *w);

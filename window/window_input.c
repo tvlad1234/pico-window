@@ -6,6 +6,9 @@
 #include "window.h"
 #include "window_rtos.h"
 
+/// @brief Returns number of keypresses present in the buffer for the specified window
+/// @param w Window for which to get number of keypresses
+/// @return number of keypresses
 uint8_t Window_pressedKey(TermWindow *w)
 {
     return w->numKeys;

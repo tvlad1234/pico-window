@@ -5,6 +5,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "semphr.h"
 
 #include "window.h"
 #include "window_rtos.h"
@@ -17,6 +18,34 @@ TermWindow *activeWindow = NULL;
 TermWindow *windowCarousel[MAX_WINDOWS];
 uint nrWindows = 0;
 uint activeNr;
+
+/// @brief Sets a user-specified index to the window. The library doesn't use this, it's purely for the user
+/// @param w 
+/// @param x 
+void Window_setUserIndex(TermWindow *w, int x)
+{
+    w->userIndex = x;
+}
+
+/// @brief Destroys a window, deallocating its memory
+/// @param w pointer to the window to be destroyed
+void Window_destroy(TermWindow *w)
+{
+    for (int i = 0; i < nrWindows; i++)
+    {
+        if (windowCarousel[i] == w)
+        {
+            for (int j = i; j < nrWindows - 1; j++)
+                windowCarousel[j] = windowCarousel[j + 1];
+            break;
+        }
+    }
+    nrWindows--;
+    if (w == activeWindow)
+        Window_nextWindow();
+    GFX_fillRect(w->xPos, w->yPos, w->xRes, w->yRes, BLACK);
+    vPortFree(w);
+}
 
 /// @brief Sets focus to the specified window
 /// @param w pointer to the window to focus to
@@ -54,7 +83,7 @@ void Window_initWindow(TermWindow *w, uint xPos, uint yPos, uint xSize, uint ySi
     GFX_drawRect(xPos, yPos, xSize, ySize, borderCol);
     GFX_fillRect(w->xPos, yPos, xSize, 10, WHITE);
 
-    GFX_setCursor(xPos + 1, yPos+1);
+    GFX_setCursor(xPos + 1, yPos + 1);
     GFX_setTextColor(BLACK);
     GFX_printf(name);
 
@@ -92,7 +121,7 @@ void Window_nextWindow()
         activeNr++;
     else
         activeNr = 0;
-   // kbKeys = 0; // clear keypress buffer when switching focus
+    // kbKeys = 0; // clear keypress buffer when switching focus
     Window_setActiveWindow(windowCarousel[activeNr]);
 }
 
